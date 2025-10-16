@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendrier ArtePoly</title>
+<style>
+:root{
+  --bleu:#4650E5; --rose:#FF6FAE; --fond:#FFF6E9; --texte:#1E1B2E; --indigo:#2E2A6D;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+.container{max-width:1200px;margin:0 auto;padding:18px}
+
+/* Card */
+#arte-cal-card{ background:var(--fond); border-radius:24px; padding:20px; box-shadow:0 10px 30px rgba(46,42,109,.12) }
+
+/* Header */
+#arte-cal .cal-top{ display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:8px }
+#arte-cal .cal-title{ font-weight:900; font-size:clamp(22px,4.2vw,32px); color:var(--indigo); margin:0 8px; text-transform:capitalize }
+#arte-cal .cal-nav{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px;
+  border:1px solid rgba(0,0,0,.08); background:#fff; border-radius:12px; cursor:pointer; font-size:20px; transition:.15s }
+#arte-cal .cal-nav:hover{ border-color:rgba(0,0,0,.18); transform:translateY(-1px) }
+
+/* Weekdays & grid */
+#arte-cal .weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin:14px 0 10px;
+  color:rgba(30,27,46,.75); font-weight:800; font-size:.9rem; text-align:center }
+#arte-cal .grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:12px }
+#arte-cal .cell{ background:rgba(255,255,255,.7); border-radius:16px; min-height:120px; position:relative; overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.03) }
+#arte-cal .cell.out{ opacity:.45 }
+#arte-cal .num{ position:absolute; top:8px; right:8px; font-size:.85rem; color:rgba(30,27,46,.7); font-weight:800;
+  background:#fff; border-radius:8px; padding:2px 6px; border:1px solid rgba(0,0,0,.06) }
+
+/* Big icon (single event) */
+#arte-cal .icon-wrap{ position:absolute; inset:auto 8px 8px 8px; height:calc(100% - 42px);
+  display:flex; align-items:center; justify-content:center; border-radius:12px; overflow:hidden;
+  background:#000; box-shadow:0 8px 22px rgba(0,0,0,.18) }
+#arte-cal .icon-wrap img{ width:100%; height:100%; object-fit:cover; display:block }
+
+/* Chips (multiple events) */
+#arte-cal .chipbar{ position:absolute; left:8px; bottom:8px; display:flex; gap:6px }
+#arte-cal .chip{ width:30px; height:30px; border-radius:8px; overflow:hidden; background:#000;
+  border:1px solid rgba(255,255,255,.65); box-shadow:0 4px 12px rgba(0,0,0,.18) }
+#arte-cal .chip img{ width:100%; height:100%; object-fit:cover; display:block }
+
+/* Tooltip */
+#arte-cal [data-tip]{ position:relative }
+#arte-cal [data-tip]:hover::after{
+  content:attr(data-tip); position:absolute; left:8px; bottom:calc(100% + 8px);
+  background:#1E1B2E; color:#fff; padding:6px 8px; font-size:.8rem; border-radius:8px; white-space:nowrap;
+  box-shadow:0 10px 22px rgba(0,0,0,.28); z-index:5 }
+
+/* Mobile */
+@media (max-width:640px){ #arte-cal .cell{ min-height:96px } #arte-cal .icon-wrap{ height:calc(100% - 38px) } }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div id="arte-cal-card">
+      <div id="arte-cal">
+        <div class="cal-top">
+          <button class="cal-nav" id="cal-prev" aria-label="Mois précédent">‹</button>
+          <div class="cal-title" id="cal-title">mois année</div>
+          <button class="cal-nav" id="cal-next" aria-label="Mois suivant">›</button>
+        </div>
+        <div class="weekdays" id="cal-weekdays"></div>
+        <div class="grid" id="cal-grid" role="grid"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ==== CSV-driven calendar (French, Monday-start) ==== */
+(function(){
+  const CSV_URL = 'https://artepoly.agepoly.ch/wp-content/uploads/2025/10/events.csv';
+  const WEEKDAY_LABELS = ['LU','MA','ME','JE','VE','SA','DI'];
+
+  const $title = document.getElementById('cal-title');
+  const $wk    = document.getElementById('cal-weekdays');
+  const $grid  = document.getElementById('cal-grid');
+  const $prev  = document.getElementById('cal-prev');
+  const $next  = document.getElementById('cal-next');
+
+  $wk.innerHTML = WEEKDAY_LABELS.map(d=>`<div>${d}</div>`).join('');
+
+  let current = new Date(); current.setDate(1);
+  let allEvents = {};
+
+  function parseCSV(text){
+    const rows=[]; let i=0,f='',row=[],q=false;
+    while(i<text.length){
+      const c=text[i++];
+      if(c=='"'){ if(q && text[i]=='"'){ f+='"'; i++; } else q=!q; }
+      else if(c==',' && !q){ row.push(f.trim()); f=''; }
+      else if((c=='\n'||c=='\r') && !q){ if(f.length||row.length){ row.push(f.trim()); rows.push(row); } f=''; row=[]; }
+      else { f+=c; }
+    }
+    if(f.length||row.length){ row.push(f.trim()); rows.push(row); }
+    return rows;
+  }
+  function normalize(rows){
+    if(!rows.length) return {};
+    const hdr = rows.shift().map(h=>h.toLowerCase());
+    const idx = Object.fromEntries(hdr.map((h,i)=>[h,i]));
+    const map = {};
+    rows.forEach(r=>{
+      const date=(r[idx.date]||'').trim(); if(!date) return;
+      const ev={
+        date,
+        title:r[idx.title]||'',
+        icon:r[idx.icon]||'',
+        link:r[idx.link]||'',
+        time:r[idx.time]||'',
+        desc:r[idx.desc]||''
+      };
+      (map[date]=map[date]||[]).push(ev);
+    });
+    return map;
+  }
+  async function loadCSV(){
+    try{
+      const res=await fetch(CSV_URL,{cache:'no-store'});
+      const txt=await res.text();
+      allEvents=normalize(parseCSV(txt));
+    }catch(e){ console.error('CSV load error:',e); allEvents={}; }
+  }
+  function ymd(d){ return d.toISOString().slice(0,10); }
+  function titleStr(d){ return d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}); }
+
+  function render(){
+    $title.textContent = titleStr(current);
+
+    // Monday-start grid
+    const first=new Date(current);
+    const start=new Date(first);
+    const w=(first.getDay()+6)%7; // 0=Mon..6=Sun
+    start.setDate(1 - w);
+
+    const cells=[];
+    for(let i=0;i<42;i++){
+      const day=new Date(start); day.setDate(start.getDate()+i);
+      const inMonth=(day.getMonth()===current.getMonth());
+      const dkey=ymd(day);
+      const evs=allEvents[dkey]||[];
+
+      let inner = `<div class="num">${day.getDate()}</div>`;
+      if(evs.length===1){
+        const ev=evs[0];
+        const tip=[ev.title,ev.time,ev.desc].filter(Boolean).join(' — ');
+        const node = ev.link
+          ? `<a href="${ev.link}" aria-label="${ev.title}" data-tip="${tip}"><img src="${ev.icon}" alt=""></a>`
+          : `<div aria-label="${ev.title}" data-tip="${tip}"><img src="${ev.icon}" alt=""></div>`;
+        inner += `<div class="icon-wrap">${node}</div>`;
+      }else if(evs.length>1){
+        const chips=evs.slice(0,3).map(ev=>{
+          const tip=[ev.title,ev.time].filter(Boolean).join(' — ');
+          const img=`<img src="${ev.icon}" alt="">`;
+          return ev.link ? `<a class="chip" href="${ev.link}" data-tip="${tip}">${img}</a>`
+                         : `<div class="chip" data-tip="${tip}">${img}</div>`;
+        }).join('');
+        inner += `<div class="chipbar">${chips}</div>`;
+      }
+
+      cells.push(`<div class="cell ${inMonth?'':'out'}">${inner}</div>`);
+    }
+    $grid.innerHTML = cells.join('');
+  }
+
+  $prev.addEventListener('click',()=>{ current.setMonth(current.getMonth()-1); render(); });
+  $next.addEventListener('click',()=>{ current.setMonth(current.getMonth()+1); render(); });
+
+  (async function init(){ await loadCSV(); render(); })();
+})();
+</script>
+</body>
+</html>
