@@ -73,7 +73,9 @@ html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-fami
 <script>
 /* ==== CSV-driven calendar (French, Monday-start) ==== */
 (function(){
-  const CSV_URL = 'https://artepoly.agepoly.ch/wp-content/uploads/2025/10/events.csv';
+  // CHANGE THIS LINE - use local CSV file in your repo
+  const CSV_URL = 'events.csv';
+  
   const WEEKDAY_LABELS = ['LU','MA','ME','JE','VE','SA','DI'];
 
   const $title = document.getElementById('cal-title');
@@ -99,6 +101,7 @@ html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-fami
     if(f.length||row.length){ row.push(f.trim()); rows.push(row); }
     return rows;
   }
+  
   function normalize(rows){
     if(!rows.length) return {};
     const hdr = rows.shift().map(h=>h.toLowerCase());
@@ -118,13 +121,20 @@ html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-fami
     });
     return map;
   }
+  
   async function loadCSV(){
     try{
       const res=await fetch(CSV_URL,{cache:'no-store'});
       const txt=await res.text();
       allEvents=normalize(parseCSV(txt));
-    }catch(e){ console.error('CSV load error:',e); allEvents={}; }
+    }catch(e){ 
+      console.error('CSV load error:',e); 
+      allEvents={};
+      // Show error in calendar
+      $grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--rose)">Erreur de chargement du calendrier</div>';
+    }
   }
+  
   function ymd(d){ return d.toISOString().slice(0,10); }
   function titleStr(d){ return d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}); }
 
@@ -149,14 +159,14 @@ html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-fami
         const ev=evs[0];
         const tip=[ev.title,ev.time,ev.desc].filter(Boolean).join(' — ');
         const node = ev.link
-          ? `<a href="${ev.link}" aria-label="${ev.title}" data-tip="${tip}"><img src="${ev.icon}" alt=""></a>`
+          ? `<a href="${ev.link}" aria-label="${ev.title}" data-tip="${tip}" target="_blank"><img src="${ev.icon}" alt=""></a>`
           : `<div aria-label="${ev.title}" data-tip="${tip}"><img src="${ev.icon}" alt=""></div>`;
         inner += `<div class="icon-wrap">${node}</div>`;
       }else if(evs.length>1){
         const chips=evs.slice(0,3).map(ev=>{
           const tip=[ev.title,ev.time].filter(Boolean).join(' — ');
           const img=`<img src="${ev.icon}" alt="">`;
-          return ev.link ? `<a class="chip" href="${ev.link}" data-tip="${tip}">${img}</a>`
+          return ev.link ? `<a class="chip" href="${ev.link}" data-tip="${tip}" target="_blank">${img}</a>`
                          : `<div class="chip" data-tip="${tip}">${img}</div>`;
         }).join('');
         inner += `<div class="chipbar">${chips}</div>`;
