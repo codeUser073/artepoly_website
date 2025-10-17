@@ -157,7 +157,13 @@ html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-fami
       let inner = `<div class="num">${day.getDate()}</div>`;
       if(evs.length===1){
         const ev=evs[0];
-        const tip=[ev.title,ev.time,ev.desc].filter(Boolean).join(' — ');
+        const tip = ev.desc && ev.time 
+  ? `${ev.title} - ${ev.time} - ${ev.desc}`
+  : ev.desc 
+    ? `${ev.title} - ${ev.desc}`
+    : ev.time 
+      ? `${ev.title} - ${ev.time}`
+      : ev.title;
         const node = ev.link
           ? `<a href="${ev.link}" aria-label="${ev.title}" data-tip="${tip}" target="_blank"><img src="${ev.icon}" alt=""></a>`
           : `<div aria-label="${ev.title}" data-tip="${tip}"><img src="${ev.icon}" alt=""></div>`;
