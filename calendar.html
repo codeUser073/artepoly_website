@@ -1,201 +1,421 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Calendrier ArtePoly</title>
-<style>
-:root{
-  --bleu:#4650E5; --rose:#FF6FAE; --fond:#FFF6E9; --texte:#1E1B2E; --indigo:#2E2A6D;
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--fond);color:var(--texte);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-.container{max-width:1200px;margin:0 auto;padding:18px}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Calendrier ArtePoly</title>
+    <style>
+        :root {
+            --bg-color: #fce4ec;
+            --pop-blue: #4755f5;
+            --pop-pink: #ff59c7;
+            --text-black: #0d0d0d;
+            --text-gray: #b1b1b1;
+            --accent: #ffee58;
+        }
 
-/* Card */
-#arte-cal-card{ background:var(--fond); border-radius:24px; padding:20px; box-shadow:0 10px 30px rgba(46,42,109,.12) }
+        * { box-sizing: border-box; }
 
-/* Header */
-#arte-cal .cal-top{ display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:8px }
-#arte-cal .cal-title{ font-weight:900; font-size:clamp(22px,4.2vw,32px); color:var(--indigo); margin:0 8px; text-transform:capitalize }
-#arte-cal .cal-nav{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px;
-  border:1px solid rgba(0,0,0,.08); background:#fff; border-radius:12px; cursor:pointer; font-size:20px; transition:.15s }
-#arte-cal .cal-nav:hover{ border-color:rgba(0,0,0,.18); transform:translateY(-1px) }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: var(--text-black);
+            font-family: 'Reenie Beanie', cursive;
+        }
 
-/* Weekdays & grid */
-#arte-cal .weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin:14px 0 10px;
-  color:rgba(30,27,46,.75); font-weight:800; font-size:.9rem; text-align:center }
-#arte-cal .grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:12px }
-#arte-cal .cell{ background:rgba(255,255,255,.7); border-radius:16px; min-height:120px; position:relative; overflow:hidden;
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.03) }
-#arte-cal .cell.out{ opacity:.45 }
-#arte-cal .num{ position:absolute; top:8px; right:8px; font-size:.85rem; color:rgba(30,27,46,.8); font-weight:800;
-  background:rgba(255,255,255,.95); border-radius:8px; padding:4px 8px; border:1px solid rgba(0,0,0,.1); 
-  backdrop-filter:blur(4px); z-index:2; box-shadow:0 2px 8px rgba(0,0,0,.1) }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 18px;
+        }
 
-/* Big icon (single event) */
-#arte-cal .icon-wrap{ position:absolute; inset:8px;
-  display:flex; align-items:center; justify-content:center; border-radius:12px; overflow:hidden;
-  background:#000; box-shadow:0 8px 22px rgba(0,0,0,.18) }
-#arte-cal .icon-wrap .event-link{ display:block; width:100%; height:100%; position:relative; cursor:pointer; overflow:hidden }
-#arte-cal .icon-wrap img{ width:100%; height:100%; object-fit:cover; display:block; transition:opacity .3s ease }
-#arte-cal .event-overlay{ position:absolute; inset:0; background:rgba(30,27,46,.95); display:flex; 
-  align-items:center; justify-content:center; padding:12px; opacity:0; transition:opacity .3s ease; 
-  pointer-events:none; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain }
-#arte-cal .event-link:hover .event-overlay{ pointer-events:auto }
-#arte-cal .event-text{ color:#fff; font-size:.85rem; font-weight:600; text-align:center; line-height:1.5; 
-  word-wrap:break-word; overflow-wrap:break-word; hyphens:auto; width:100% }
-#arte-cal .icon-wrap .event-link:hover img{ opacity:.2 }
-#arte-cal .icon-wrap .event-link:hover .event-overlay{ opacity:1 }
+        /* ─── EVENTS SECTION ─── */
+        .events-section {
+            padding: 100px 5vw;
+            background-color: var(--pop-pink);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-/* Chips (multiple events) */
-#arte-cal .chipbar{ position:absolute; left:8px; bottom:8px; display:flex; gap:6px }
-#arte-cal .chip{ width:30px; height:30px; border-radius:8px; overflow:hidden; background:#000;
-  border:1px solid rgba(255,255,255,.65); box-shadow:0 4px 12px rgba(0,0,0,.18); position:relative; cursor:pointer }
-#arte-cal .chip img{ width:100%; height:100%; object-fit:cover; display:block; transition:opacity .3s ease }
-#arte-cal .chip-overlay{ position:absolute; inset:0; background:rgba(30,27,46,.95); display:flex; 
-  align-items:center; justify-content:center; padding:4px; opacity:0; transition:opacity .3s ease; 
-  pointer-events:none; overflow-y:auto; box-sizing:border-box; overscroll-behavior:contain }
-#arte-cal .chip-text{ color:#fff; font-size:.65rem; font-weight:600; text-align:center; line-height:1.3; 
-  word-wrap:break-word; overflow-wrap:break-word; width:100% }
-#arte-cal .chip:hover img{ opacity:.2 }
-#arte-cal .chip:hover .chip-overlay{ opacity:1; pointer-events:auto }
+        .events-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13vw;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 60px;
+            line-height: 0.9;
+            color: var(--accent);
+            text-shadow: 8px 8px 0px var(--pop-blue);
+            letter-spacing: -0.05em;
+            font-weight: 900;
+        }
 
+        .calendar-container {
+            background: white;
+            border: 4px solid var(--text-black);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 15px 15px 0px var(--pop-blue);
+            max-width: 1100px;
+            width: 100%;
+            color: var(--text-black);
+            position: relative;
+        }
 
-/* Mobile */
-@media (max-width:640px){ #arte-cal .cell{ min-height:96px } }
-</style>
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            font-weight: 900;
+        }
+
+        .calendar-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--text-black);
+            background: var(--accent);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            color: var(--text-black);
+        }
+
+        .calendar-nav-btn:hover {
+            background-color: var(--pop-blue);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            font-weight: 900;
+            color: var(--pop-blue);
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--text-gray);
+            text-transform: uppercase;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1/1;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 10px;
+            position: relative;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            cursor: default;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .calendar-day.has-event {
+            border-color: var(--pop-blue);
+            background-color: #f0f3ff;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--pop-blue);
+        }
+
+        .calendar-day.has-event:hover {
+            transform: scale(1.05) rotate(2deg);
+            background-color: var(--accent);
+            z-index: 5;
+        }
+
+        .calendar-day.not-current-month {
+            opacity: 0.2;
+            cursor: default;
+        }
+
+        .calendar-day-num {
+            font-size: 1.2rem;
+            color: var(--text-black);
+        }
+
+        .event-icon {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: white;
+            border: 2px solid var(--text-black);
+            border-radius: 50%;
+            box-shadow: 2px 2px 0px var(--pop-pink);
+            overflow: hidden;
+        }
+
+        .event-icon img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+        }
+
+        /* Tooltip style */
+        .event-tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            width: 250px;
+            background: white;
+            border: 3px solid var(--text-black);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 8px 8px 0px var(--pop-pink);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            text-align: left;
+        }
+
+        .calendar-day.has-event:hover .event-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .tooltip-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--pop-blue);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            border-radius: 50px;
+            margin-bottom: 8px;
+            font-weight: 900;
+        }
+
+        .tooltip-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 16px;
+            font-weight: 900;
+            margin-bottom: 5px;
+            color: var(--text-black);
+        }
+
+        .tooltip-desc {
+            font-family: 'Reenie Beanie', cursive;
+            font-size: 18px;
+            line-height: 1.2;
+            color: #555;
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+            .calendar-container { padding: 20px; }
+            .calendar-header { font-size: 1.8rem; margin-bottom: 20px; }
+            .calendar-nav-btn { width: 40px; height: 40px; font-size: 18px; }
+            .calendar-day { min-height: 80px; }
+            .events-title { font-size: 15vw; margin-bottom: 40px; }
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Reenie+Beanie&family=Montserrat:wght@900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <div id="arte-cal-card">
-      <div id="arte-cal">
-        <div class="cal-top">
-          <button class="cal-nav" id="cal-prev" aria-label="Mois précédent">‹</button>
-          <div class="cal-title" id="cal-title">mois année</div>
-          <button class="cal-nav" id="cal-next" aria-label="Mois suivant">›</button>
+<section class="events-section">
+    <h2 class="events-title">NOS ÉVÉNEMENTS</h2>
+
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button class="calendar-nav-btn" id="cal-prev" aria-label="Mois précédent">‹</button>
+            <span id="calendar-month-display">Mars 2026</span>
+            <button class="calendar-nav-btn" id="cal-next" aria-label="Mois suivant">›</button>
         </div>
-        <div class="weekdays" id="cal-weekdays"></div>
-        <div class="grid" id="cal-grid" role="grid"></div>
-      </div>
+        <div class="calendar-grid" id="calendar-grid-body">
+            <!-- Weekdays -->
+            <div class="calendar-weekday">LUN</div>
+            <div class="calendar-weekday">MAR</div>
+            <div class="calendar-weekday">MER</div>
+            <div class="calendar-weekday">JEU</div>
+            <div class="calendar-weekday">VEN</div>
+            <div class="calendar-weekday">SAM</div>
+            <div class="calendar-weekday">DIM</div>
+            <!-- Days injected here -->
+        </div>
     </div>
-  </div>
+</section>
 
 <script>
-/* ==== CSV-driven calendar (French, Monday-start) ==== */
-(function(){
-  // CHANGE THIS LINE - use local CSV file in your repo
-  const CSV_URL = 'events.csv';
-  
-  const WEEKDAY_LABELS = ['LU','MA','ME','JE','VE','SA','DI'];
+    (function(){
+        // CSV URL - change to your local file path
+        const CSV_URL = 'events.csv';
 
-  const $title = document.getElementById('cal-title');
-  const $wk    = document.getElementById('cal-weekdays');
-  const $grid  = document.getElementById('cal-grid');
-  const $prev  = document.getElementById('cal-prev');
-  const $next  = document.getElementById('cal-next');
+        const $title = document.getElementById('calendar-month-display');
+        const $grid = document.getElementById('calendar-grid-body');
+        const $prev = document.getElementById('cal-prev');
+        const $next = document.getElementById('cal-next');
 
-  $wk.innerHTML = WEEKDAY_LABELS.map(d=>`<div>${d}</div>`).join('');
+        let current = new Date();
+        current.setDate(1);
+        let allEvents = {};
 
-  let current = new Date(); current.setDate(1);
-  let allEvents = {};
+        function parseCSV(text) {
+            const rows = [];
+            let i = 0, f = '', row = [], q = false;
+            while (i < text.length) {
+                const c = text[i++];
+                if (c == '"') {
+                    if (q && text[i] == '"') { f += '"'; i++; }
+                    else q = !q;
+                } else if (c == ',' && !q) {
+                    row.push(f.trim());
+                    f = '';
+                } else if ((c == '\n' || c == '\r') && !q) {
+                    if (f.length || row.length) {
+                        row.push(f.trim());
+                        rows.push(row);
+                    }
+                    f = '';
+                    row = [];
+                } else {
+                    f += c;
+                }
+            }
+            if (f.length || row.length) {
+                row.push(f.trim());
+                rows.push(row);
+            }
+            return rows;
+        }
 
-  function parseCSV(text){
-    const rows=[]; let i=0,f='',row=[],q=false;
-    while(i<text.length){
-      const c=text[i++];
-      if(c=='"'){ if(q && text[i]=='"'){ f+='"'; i++; } else q=!q; }
-      else if(c==',' && !q){ row.push(f.trim()); f=''; }
-      else if((c=='\n'||c=='\r') && !q){ if(f.length||row.length){ row.push(f.trim()); rows.push(row); } f=''; row=[]; }
-      else { f+=c; }
-    }
-    if(f.length||row.length){ row.push(f.trim()); rows.push(row); }
-    return rows;
-  }
-  
-  function normalize(rows){
-    if(!rows.length) return {};
-    const hdr = rows.shift().map(h=>h.toLowerCase());
-    const idx = Object.fromEntries(hdr.map((h,i)=>[h,i]));
-    const map = {};
-    rows.forEach(r=>{
-      const date=(r[idx.date]||'').trim(); if(!date) return;
-      const ev={
-        date,
-        title:r[idx.title]||'',
-        icon:r[idx.icon]||'',
-        link:r[idx.link]||'',
-        time:r[idx.time]||'',
-        desc:r[idx.desc]||''
-      };
-      (map[date]=map[date]||[]).push(ev);
-    });
-    return map;
-  }
-  
-  async function loadCSV(){
-    try{
-      const res=await fetch(CSV_URL,{cache:'no-store'});
-      const txt=await res.text();
-      allEvents=normalize(parseCSV(txt));
-    }catch(e){ 
-      console.error('CSV load error:',e); 
-      allEvents={};
-      // Show error in calendar
-      $grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--rose)">Erreur de chargement du calendrier</div>';
-    }
-  }
-  
-  function ymd(d){ return d.toISOString().slice(0,10); }
-  function titleStr(d){ return d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'}); }
+        function normalize(rows) {
+            if (!rows.length) return {};
+            const hdr = rows.shift().map(h => h.toLowerCase());
+            const idx = Object.fromEntries(hdr.map((h, i) => [h, i]));
+            const map = {};
+            rows.forEach(r => {
+                const date = (r[idx.date] || '').trim();
+                if (!date) return;
+                const ev = {
+                    date,
+                    title: r[idx.title] || '',
+                    icon: r[idx.icon] || '',
+                    link: r[idx.link] || '',
+                    time: r[idx.time] || '',
+                    desc: r[idx.desc] || '',
+                    pole: r[idx.pole] || ''
+                };
+                (map[date] = map[date] || []).push(ev);
+            });
+            return map;
+        }
 
-  function render(){
-    $title.textContent = titleStr(current);
+        async function loadCSV() {
+            try {
+                const res = await fetch(CSV_URL, { cache: 'no-store' });
+                const txt = await res.text();
+                allEvents = normalize(parseCSV(txt));
+            } catch (e) {
+                console.error('CSV load error:', e);
+                allEvents = {};
+                $grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--pop-pink)">Erreur de chargement du calendrier</div>';
+            }
+        }
 
-    // Monday-start grid
-    const first=new Date(current);
-    const start=new Date(first);
-    const w=(first.getDay()+6)%7; // 0=Mon..6=Sun
-    start.setDate(1 - w);
+        function ymd(d) {
+            return d.toISOString().slice(0, 10);
+        }
 
-    const cells=[];
-    for(let i=0;i<42;i++){
-      const day=new Date(start); day.setDate(start.getDate()+i);
-      const inMonth=(day.getMonth()===current.getMonth());
-      const dkey=ymd(day);
-      const evs=allEvents[dkey]||[];
+        function titleStr(d) {
+            return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }).toUpperCase();
+        }
 
-      let inner = `<div class="num">${day.getDate()}</div>`;
-      if(evs.length===1){
-        const ev=evs[0];
-        const tip = ev.desc || ev.title || '';
-        const imgNode = `<img src="${ev.icon}" alt="">`;
-        const textNode = `<div class="event-overlay"><div class="event-text">${tip}</div></div>`;
-        const node = ev.link
-          ? `<a href="${ev.link}" aria-label="${ev.title}" class="event-link">${imgNode}${textNode}</a>`
-          : `<div aria-label="${ev.title}" class="event-link">${imgNode}${textNode}</div>`;
-        inner += `<div class="icon-wrap">${node}</div>`;
-      }else if(evs.length>1){
-        const chips=evs.slice(0,3).map(ev=>{
-          const tip = ev.desc || ev.title || '';
-          const img=`<img src="${ev.icon}" alt="">`;
-          const textNode = `<div class="chip-overlay"><div class="chip-text">${tip}</div></div>`;
-          return ev.link ? `<a class="chip" href="${ev.link}" target="_blank">${img}${textNode}</a>`
-                         : `<div class="chip">${img}${textNode}</div>`;
-        }).join('');
-        inner += `<div class="chipbar">${chips}</div>`;
-      }
+        function render() {
+            $title.textContent = titleStr(current);
 
-      cells.push(`<div class="cell ${inMonth?'':'out'}">${inner}</div>`);
-    }
-    $grid.innerHTML = cells.join('');
-  }
+            // Monday-start grid
+            const first = new Date(current);
+            const start = new Date(first);
+            const w = (first.getDay() + 6) % 7;
+            start.setDate(1 - w);
 
-  $prev.addEventListener('click',()=>{ current.setMonth(current.getMonth()-1); render(); });
-  $next.addEventListener('click',()=>{ current.setMonth(current.getMonth()+1); render(); });
+            const cells = [];
+            for (let i = 0; i < 42; i++) {
+                const day = new Date(start);
+                day.setDate(start.getDate() + i);
+                const inMonth = (day.getMonth() === current.getMonth());
+                const dkey = ymd(day);
+                const evs = allEvents[dkey] || [];
 
-  (async function init(){ await loadCSV(); render(); })();
-})();
+                let inner = `<div class="calendar-day-num">${day.getDate()}</div>`;
+
+                if (evs.length >= 1) {
+                    const ev = evs[0];
+                    const iconHtml = ev.icon ? `<img src="${ev.icon}" alt="${ev.title}">` : '';
+                    const tooltip = `
+                    <div class="event-tooltip">
+                        ${ev.pole ? `<div class="tooltip-tag">${ev.pole}</div>` : ''}
+                        <div class="tooltip-title">${ev.title}</div>
+                        ${ev.desc ? `<div class="tooltip-desc">${ev.desc}</div>` : ''}
+                    </div>
+                `;
+                    inner += `<div class="event-icon">${iconHtml}</div>${tooltip}`;
+                }
+
+                cells.push(`<div class="calendar-day ${inMonth ? '' : 'not-current-month'} ${evs.length >= 1 ? 'has-event' : ''}">${inner}</div>`);
+            }
+
+            // Clear old days, keep weekdays
+            const weekdayRows = Array.from($grid.children).slice(0, 7);
+            $grid.innerHTML = '';
+            weekdayRows.forEach(row => $grid.appendChild(row));
+            cells.forEach(cell => {
+                const div = document.createElement('div');
+                div.innerHTML = cell;
+                $grid.appendChild(div.firstElementChild);
+            });
+        }
+
+        $prev.addEventListener('click', () => {
+            current.setMonth(current.getMonth() - 1);
+            render();
+        });
+
+        $next.addEventListener('click', () => {
+            current.setMonth(current.getMonth() + 1);
+            render();
+        });
+
+        (async function init() {
+            await loadCSV();
+            render();
+        })();
+    })();
 </script>
 </body>
 </html>
